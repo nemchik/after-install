@@ -38,6 +38,12 @@ main() {
         exit 1
     fi
 
+    # System Info
+    readonly ARCH=$(uname -m)
+    readonly DPKG_ARCH=$(dpkg --print-architecture)
+    readonly ID=$(grep --color=never -Po '^ID=\K.*' /etc/os-release)
+    readonly VERSION_CODENAME=$(grep --color=never -Po '^VERSION_CODENAME=\K.*' /etc/os-release)
+
     # apt-get updates, installs, and cleanups
     sudo apt-get -y update
     sudo apt-get -y install \
@@ -98,5 +104,19 @@ EOF
     fi
     sudo sed -i -E 's/^#?PermitRootLogin .*$/PermitRootLogin no/g' /etc/ssh/sshd_config
     sudo systemctl restart ssh
+
+    local GET_RCLONE
+    GET_RCLONE=$(mktemp)
+    curl -fsSL rclone.org/install.sh -o "${GET_RCLONE}"
+    sudo bash "${GET_RCLONE}"
+    rm -f "${GET_RCLONE}"
+
+    # https://github.com/trapexit/mergerfs/releases
+    local AVAILABLE_MERGERFS
+    AVAILABLE_MERGERFS=$(curl -fsL "https://api.github.com/repos/trapexit/mergerfs/releases/latest" | grep -Po '"tag_name": "[Vv]?\K.*?(?=")')
+    local MERGERFS_FILENAME="mergerfs_${AVAILABLE_MERGERFS}.${ID}-${VERSION_CODENAME}_${DPKG_ARCH}.deb"
+    curl -fsL "https://github.com/trapexit/mergerfs/releases/download/${AVAILABLE_MERGERFS}/${MERGERFS_FILENAME}" -o "${MERGERFS_FILENAME}"
+    sudo dpkg -i "${MERGERFS_FILENAME}"
+    rm -f "${MERGERFS_FILENAME}"
 }
 main
