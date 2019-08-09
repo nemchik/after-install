@@ -98,7 +98,7 @@ EOF
     if ! grep -q '/run/shm' /etc/fstab; then
         echo "none     /run/shm     tmpfs     defaults,ro     0     0" >> /etc/fstab
     fi
-    sudo mount -o remount /run/shm
+    sudo mount -o remount /run/shm || true
 
     sudo sed -i -E 's/^#?LoginGraceTime .*$/LoginGraceTime 20/g' /etc/ssh/sshd_config
     # I append my email address as the final string after my pub key so I expect this to be present if my key has been setup
