@@ -69,16 +69,16 @@ main() {
 
     # tmux config
     # https://github.com/gpakosz/.tmux
-    if [[ ! -d .tmux ]]; then
+    if [[ ! -d "${DETECTED_HOMEDIR}/.tmux" ]]; then
         git clone https://github.com/gpakosz/.tmux.git "${DETECTED_HOMEDIR}/.tmux"
-        ln -s -f .tmux/.tmux.conf "${DETECTED_HOMEDIR}/.tmux.conf"
-        cp .tmux/.tmux.conf.local "${DETECTED_HOMEDIR}/.tmux.conf.local"
+        ln -s -f "${DETECTED_HOMEDIR}/.tmux/.tmux.conf" "${DETECTED_HOMEDIR}/.tmux.conf"
+        cp "${DETECTED_HOMEDIR}/.tmux/.tmux.conf.local" "${DETECTED_HOMEDIR}/.tmux.conf.local"
         sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
     fi
 
     # auto-tmux for SSH logins
     # https://github.com/spencertipping/bashrc-tmux
-    if [[ ! -d bashrc-tmux ]]; then
+    if [[ ! -d "${DETECTED_HOMEDIR}/bashrc-tmux" ]]; then
         git clone https://github.com/spencertipping/bashrc-tmux.git "${DETECTED_HOMEDIR}/bashrc-tmux"
         if ! grep -q 'bashrc-tmux' "${DETECTED_HOMEDIR}/.bashrc"; then
             local BASHRC_TMP
