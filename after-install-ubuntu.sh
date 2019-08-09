@@ -69,28 +69,31 @@ main() {
 
     # tmux config
     # https://github.com/gpakosz/.tmux
-    git clone https://github.com/gpakosz/.tmux.git "${DETECTED_HOMEDIR}/.tmux"
-    ln -s -f .tmux/.tmux.conf "${DETECTED_HOMEDIR}/.tmux.conf"
-    cp .tmux/.tmux.conf.local "${DETECTED_HOMEDIR}/.tmux.conf.local"
-    sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
+    if [[ ! -d .tmux ]]; then
+        git clone https://github.com/gpakosz/.tmux.git "${DETECTED_HOMEDIR}/.tmux"
+        ln -s -f .tmux/.tmux.conf "${DETECTED_HOMEDIR}/.tmux.conf"
+        cp .tmux/.tmux.conf.local "${DETECTED_HOMEDIR}/.tmux.conf.local"
+        sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
+    fi
 
     # auto-tmux for SSH logins
     # https://github.com/spencertipping/bashrc-tmux
-    git clone https://github.com/spencertipping/bashrc-tmux.git "${DETECTED_HOMEDIR}/bashrc-tmux"
-    if ! grep -q 'bashrc-tmux' "${DETECTED_HOMEDIR}/.bashrc"; then
-        local BASHRC_TMP
-        BASHRC_TMP=$(mktemp)
-        cat <<- 'EOF' | sed -E 's/^ *//' | cat - "${DETECTED_HOMEDIR}/.bashrc" > "${BASHRC_TMP}"
-            [ -z "$PS1" ] && return                 # this still comes first
-            source ~/bashrc-tmux/bashrc-tmux
+    if [[ ! -d bashrc-tmux ]]; then
+        git clone https://github.com/spencertipping/bashrc-tmux.git "${DETECTED_HOMEDIR}/bashrc-tmux"
+        if ! grep -q 'bashrc-tmux' "${DETECTED_HOMEDIR}/.bashrc"; then
+            local BASHRC_TMP
+            BASHRC_TMP=$(mktemp)
+            cat <<- 'EOF' | sed -E 's/^ *//' | cat - "${DETECTED_HOMEDIR}/.bashrc" > "${BASHRC_TMP}"
+                [ -z "$PS1" ] && return                 # this still comes first
+                source ~/bashrc-tmux/bashrc-tmux
 
-            # rest of bashrc below...
+                # rest of bashrc below...
 
 EOF
-        mv "${BASHRC_TMP}" "${DETECTED_HOMEDIR}/.bashrc"
-        rm -f "${BASHRC_TMP}"
+            mv "${BASHRC_TMP}" "${DETECTED_HOMEDIR}/.bashrc"
+            rm -f "${BASHRC_TMP}"
+        fi
     fi
-
     # https://help.ubuntu.com/community/StricterDefaults
     if ! grep -q '/run/shm' /etc/fstab; then
         echo "none     /run/shm     tmpfs     defaults,ro     0     0" >> /etc/fstab
@@ -109,7 +112,7 @@ EOF
     GET_RCLONE=$(mktemp)
     curl -fsSL rclone.org/install.sh -o "${GET_RCLONE}"
     sudo bash "${GET_RCLONE}"
-    rm -f "${GET_RCLONE}"
+    rm -f "${GET_RCLONE}" || true
 
     # https://github.com/trapexit/mergerfs/releases
     local AVAILABLE_MERGERFS
@@ -117,6 +120,6 @@ EOF
     local MERGERFS_FILENAME="mergerfs_${AVAILABLE_MERGERFS}.${ID}-${VERSION_CODENAME}_${DPKG_ARCH}.deb"
     curl -fsL "https://github.com/trapexit/mergerfs/releases/download/${AVAILABLE_MERGERFS}/${MERGERFS_FILENAME}" -o "${MERGERFS_FILENAME}"
     sudo dpkg -i "${MERGERFS_FILENAME}"
-    rm -f "${MERGERFS_FILENAME}"
+    rm -f "${MERGERFS_FILENAME}" || true
 }
 main
