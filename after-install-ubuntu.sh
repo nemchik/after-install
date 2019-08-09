@@ -111,7 +111,7 @@ EOF
     local GET_RCLONE
     GET_RCLONE=$(mktemp)
     curl -fsSL rclone.org/install.sh -o "${GET_RCLONE}"
-    sudo bash "${GET_RCLONE}"
+    sudo bash "${GET_RCLONE}" || true
     rm -f "${GET_RCLONE}" || true
 
     # https://github.com/trapexit/mergerfs/releases
