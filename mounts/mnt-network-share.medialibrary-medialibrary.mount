@@ -1,0 +1,14 @@
+# /etc/systemd/system/mnt-network-share.medialibrary-medialibrary.mount
+[Unit]
+Description=NFS Mount medialibrary
+After=network-online.target
+
+[Mount]
+What=192.168.1.21:/raid5store1/medialibrary
+Where=/mnt/network/share.medialibrary/medialibrary
+Type=nfs
+Options=noauto,x-systemd.automount,x-systemd.device-timeout=30,_netdev
+TimeoutSec=30
+
+[Install]
+WantedBy=default.target

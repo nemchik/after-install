@@ -108,6 +108,8 @@ EOF
     sudo sed -i -E 's/^#?PermitRootLogin .*$/PermitRootLogin no/g' /etc/ssh/sshd_config
     sudo systemctl restart ssh
 
+    sudo sed -i -E 's/^#?user_allow_other$/user_allow_other/g' /etc/fuse.conf
+
     local GET_RCLONE
     GET_RCLONE=$(mktemp)
     curl -fsSL rclone.org/install.sh -o "${GET_RCLONE}"

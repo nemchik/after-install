@@ -1,0 +1,14 @@
+# /etc/systemd/system/mnt-remote-rclone.drive-medialibrary.mount
+[Unit]
+Description=Rclone VFS Mount
+After=network-online.target
+
+[Mount]
+What=rclonefs#google:
+Where=/mnt/remote/rclone.drive/medialibrary
+Type=fuse
+Options=config=/home/baines/.config/rclone/.rclone.confallow-non-empty,allow-other,dir-cache-time=96h,drive-skip-gdocs,fast-list,fuse-flag=auto_cache,fuse-flag=sync_read,rc,syslog,umask=002,v,vfs-read-chunk-size=64M,vfs-read-chunk-size-limit=2048M
+TimeoutSec=300
+
+[Install]
+WantedBy=default.target

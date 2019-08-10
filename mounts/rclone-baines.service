@@ -1,0 +1,34 @@
+# /etc/systemd/system/rclone.service
+[Unit]
+Description=Rclone VFS Mount
+After=network-online.target
+
+[Service]
+User=1000
+Group=1000
+Type=notify
+#ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/rclone mount \
+  --config=/home/baines/.config/rclone/.rclone.conf \
+  --allow-non-empty \
+  --allow-other \
+  --dir-cache-time=96h \
+  --drive-skip-gdocs \
+  --fast-list \
+  --fuse-flag=sync_read \
+  --fuse-flag=auto_cache \
+  --rc \
+  --umask=002 \
+  --vfs-read-chunk-size=64M \
+  --vfs-read-chunk-size-limit=2048M \
+  --syslog \
+  -v \
+  google: /mnt/remote/rclone.drive/medialibrary
+ExecStop=/bin/fusermount -uz /mnt/remote/rclone.drive/medialibrary
+Restart=on-abort
+RestartSec=5
+StartLimitInterval=60s
+StartLimitBurst=3
+
+[Install]
+WantedBy=default.target

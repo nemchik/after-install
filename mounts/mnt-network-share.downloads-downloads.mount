@@ -1,0 +1,14 @@
+# /etc/systemd/system/mnt-network-share.downloads-downloads.mount
+[Unit]
+Description=NFS Mount downloads
+After=network-online.target
+
+[Mount]
+What=192.168.1.21:/raid5store1/downloads
+Where=/mnt/network/share.downloads/downloads
+Type=nfs
+Options=noauto,x-systemd.automount,x-systemd.device-timeout=30,_netdev
+TimeoutSec=30
+
+[Install]
+WantedBy=default.target
