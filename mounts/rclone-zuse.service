@@ -9,7 +9,7 @@ Group=1000
 Type=notify
 #ExecStartPre=/bin/sleep 10
 ExecStart=/usr/bin/rclone mount \
-  --config=/home/baines/.config/rclone/rclone.conf \
+  --config=/home/zuse/.config/rclone/rclone.conf \
   --allow-non-empty \
   --allow-other \
   --dir-cache-time=96h \
