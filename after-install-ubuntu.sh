@@ -50,6 +50,7 @@ main() {
         apt-transport-https \
         curl \
         fail2ban \
+        fonts-powerline \
         git \
         grep \
         htop \
