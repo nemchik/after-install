@@ -7,7 +7,7 @@ After=network-online.target
 What=/mnt/local/disk.*=RW:/mnt/network/share.*=RW:/mnt/remote/rclone.*=NC
 Where=/mnt/merged
 Type=fuse.mergerfs
-Options=noauto,x-systemd.automount,category.create=epall,minfreespace=0,allow_other,dropcacheonclose=true,security_capability=false,xattr=nosys,statfs_ignore=ro,use_ino,async_read=false,cache.files=auto-full
+Options=noauto,x-systemd.automount,category.create=ff,minfreespace=0,allow_other,dropcacheonclose=true,security_capability=false,xattr=nosys,statfs_ignore=ro,use_ino,async_read=false,cache.files=auto-full
 
 [Install]
 WantedBy=default.target
