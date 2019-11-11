@@ -96,22 +96,33 @@ EOF
             rm -f "${BASHRC_TMP}"
         fi
     fi
-    # https://help.ubuntu.com/community/StricterDefaults
+
+    # https://help.ubuntu.com/community/StricterDefaults#Shared_Memory
     if ! grep -q '/run/shm' /etc/fstab; then
         echo "none     /run/shm     tmpfs     defaults,ro     0     0" >> /etc/fstab
     fi
     sudo mount -o remount /run/shm || true
 
+    # https://help.ubuntu.com/community/StricterDefaults#SSH_Login_Grace_Time
     sudo sed -i -E 's/^#?LoginGraceTime .*$/LoginGraceTime 20/g' /etc/ssh/sshd_config
-    # I append my email address as the final string after my pub key so I expect this to be present if my key has been setup
+    
+    # https://help.ubuntu.com/community/StricterDefaults#Disable_Password_Authentication
+    # only disable password authentication if an ssh key with an email address comment at the end is found in the authorized_keys file
+    # be sure to setup your ssh key before running this script (and change the user comment at the end to your email address)
     if grep -q -E '^ssh-rsa .* \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
         sudo sed -i -E 's/^#?PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config
     fi
+    
+    # https://help.ubuntu.com/community/StricterDefaults#SSH_Root_Login
     sudo sed -i -E 's/^#?PermitRootLogin .*$/PermitRootLogin no/g' /etc/ssh/sshd_config
+    
+    # restart ssh after all the changes above
     sudo systemctl restart ssh
 
+    # https://github.com/rclone/rclone/issues/811#issuecomment-255599253
     sudo sed -i -E 's/^#?user_allow_other$/user_allow_other/g' /etc/fuse.conf
 
+    # https://rclone.org/install/#script-installation
     local GET_RCLONE
     GET_RCLONE=$(mktemp)
     curl -fsSL rclone.org/install.sh -o "${GET_RCLONE}"
