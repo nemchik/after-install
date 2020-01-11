@@ -77,6 +77,9 @@ main() {
         cp "${DETECTED_HOMEDIR}/.tmux/.tmux.conf.local" "${DETECTED_HOMEDIR}/.tmux.conf.local"
         sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
     fi
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux"
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf"
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf.local"
 
     # auto-tmux for SSH logins
     # https://github.com/spencertipping/bashrc-tmux
@@ -96,6 +99,8 @@ EOF
             rm -f "${BASHRC_TMP}"
         fi
     fi
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/bashrc-tmux"
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.bashrc"
 
     # https://help.ubuntu.com/community/StricterDefaults#Shared_Memory
     if ! grep -q '/run/shm' /etc/fstab; then
