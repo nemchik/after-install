@@ -60,6 +60,7 @@ main() {
         python3-pip \
         rsync \
         sed \
+        smartmontools \
         tmux
     sudo apt-get -y dist-upgrade
     sudo apt-get -y autoremove
