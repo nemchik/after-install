@@ -73,10 +73,16 @@ main() {
     # https://github.com/gpakosz/.tmux
     if [[ ! -d "${DETECTED_HOMEDIR}/.tmux" ]]; then
         git clone https://github.com/gpakosz/.tmux.git "${DETECTED_HOMEDIR}/.tmux"
-        ln -s -f "${DETECTED_HOMEDIR}/.tmux/.tmux.conf" "${DETECTED_HOMEDIR}/.tmux.conf"
-        cp "${DETECTED_HOMEDIR}/.tmux/.tmux.conf.local" "${DETECTED_HOMEDIR}/.tmux.conf.local"
-        sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
+    else
+        git -C "${DETECTED_HOMEDIR}/.tmux" pull
+        git -C "${DETECTED_HOMEDIR}/.tmux" fetch --all --prune
+        git -C "${DETECTED_HOMEDIR}/.tmux" reset --hard origin/master
+        git -C "${DETECTED_HOMEDIR}/.tmux" pull
     fi
+
+    ln -s -f "${DETECTED_HOMEDIR}/.tmux/.tmux.conf" "${DETECTED_HOMEDIR}/.tmux.conf"
+    cp -n "${DETECTED_HOMEDIR}/.tmux/.tmux.conf.local" "${DETECTED_HOMEDIR}/.tmux.conf.local"
+    sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
     chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux"
     chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf"
     chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf.local"
@@ -85,19 +91,24 @@ main() {
     # https://github.com/spencertipping/bashrc-tmux
     if [[ ! -d "${DETECTED_HOMEDIR}/bashrc-tmux" ]]; then
         git clone https://github.com/spencertipping/bashrc-tmux.git "${DETECTED_HOMEDIR}/bashrc-tmux"
-        if ! grep -q 'bashrc-tmux' "${DETECTED_HOMEDIR}/.bashrc"; then
-            local BASHRC_TMP
-            BASHRC_TMP=$(mktemp)
-            cat <<- 'EOF' | sed -E 's/^ *//' | cat - "${DETECTED_HOMEDIR}/.bashrc" > "${BASHRC_TMP}"
-                [ -z "$PS1" ] && return                 # this still comes first
-                source ~/bashrc-tmux/bashrc-tmux
+    else
+        git -C "${DETECTED_HOMEDIR}/.tmux" pull
+        git -C "${DETECTED_HOMEDIR}/.tmux" fetch --all --prune
+        git -C "${DETECTED_HOMEDIR}/.tmux" reset --hard origin/master
+        git -C "${DETECTED_HOMEDIR}/.tmux" pull
+    fi
+    if ! grep -q 'bashrc-tmux' "${DETECTED_HOMEDIR}/.bashrc"; then
+        local BASHRC_TMP
+        BASHRC_TMP=$(mktemp)
+        cat <<- 'EOF' | sed -E 's/^ *//' | cat - "${DETECTED_HOMEDIR}/.bashrc" > "${BASHRC_TMP}"
+            [ -z "$PS1" ] && return                 # this still comes first
+            source ~/bashrc-tmux/bashrc-tmux
 
-                # rest of bashrc below...
+            # rest of bashrc below...
 
 EOF
-            mv "${BASHRC_TMP}" "${DETECTED_HOMEDIR}/.bashrc"
-            rm -f "${BASHRC_TMP}"
-        fi
+        mv "${BASHRC_TMP}" "${DETECTED_HOMEDIR}/.bashrc"
+        rm -f "${BASHRC_TMP}"
     fi
     chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/bashrc-tmux"
     chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.bashrc"
@@ -110,17 +121,17 @@ EOF
 
     # https://help.ubuntu.com/community/StricterDefaults#SSH_Login_Grace_Time
     sudo sed -i -E 's/^#?LoginGraceTime .*$/LoginGraceTime 20/g' /etc/ssh/sshd_config
-    
+
     # https://help.ubuntu.com/community/StricterDefaults#Disable_Password_Authentication
     # only disable password authentication if an ssh key with an email address comment at the end is found in the authorized_keys file
     # be sure to setup your ssh key before running this script (and change the user comment at the end to your email address)
     if grep -q -E '^ssh-rsa .* \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
         sudo sed -i -E 's/^#?PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config
     fi
-    
+
     # https://help.ubuntu.com/community/StricterDefaults#SSH_Root_Login
     sudo sed -i -E 's/^#?PermitRootLogin .*$/PermitRootLogin no/g' /etc/ssh/sshd_config
-    
+
     # restart ssh after all the changes above
     sudo systemctl restart ssh
 
