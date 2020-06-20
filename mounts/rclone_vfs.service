@@ -1,4 +1,4 @@
-# /etc/systemd/system/rclone.service
+# /etc/systemd/system/rclone_vfs.service
 [Unit]
 Description=Rclone VFS Mount
 After=network-online.target
@@ -11,13 +11,11 @@ Type=notify
 ExecStart=/usr/bin/rclone mount \
   --allow-other \
   --buffer-size=64M \
-  --config=/home/baines/.config/rclone/rclone.conf \
   --dir-cache-time=168h \
   --drive-chunk-size=64M \
   --drive-skip-gdocs \
   --fast-list \
   --rc \
-  --rc-web-gui \
   --syslog \
   --timeout=10m \
   --umask=002 \
