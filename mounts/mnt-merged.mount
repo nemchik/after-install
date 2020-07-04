@@ -1,7 +1,6 @@
 # /etc/systemd/system/mnt-merged.mount
 [Unit]
 Description=MergerFS Mount
-After=network-online.target
 
 [Mount]
 What=/mnt/local/disk.*=RW:/mnt/network/share.*=RW:/mnt/remote/rclone.*=NC
