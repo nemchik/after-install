@@ -22,8 +22,8 @@ ExecStart=/usr/bin/rclone mount \
   --vfs-read-chunk-size-limit=2048M \
   --vfs-read-chunk-size=64M \
   -v \
-  google: /mnt/remote/rclone.drive/medialibrary
-ExecStop=/bin/fusermount -uz /mnt/remote/rclone.drive/medialibrary
+  gcrypt:medialibrary /mnt/remote/rclone.gcrypt/medialibrary
+ExecStop=/bin/fusermount -uz /mnt/remote/rclone.gcrypt/medialibrary
 Restart=on-abort
 RestartSec=5
 StartLimitInterval=60s
