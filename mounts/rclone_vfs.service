@@ -1,33 +1,12 @@
 # /etc/systemd/system/rclone_vfs.service
 [Unit]
 Description=Rclone VFS Mount
-After=network-online.target
+Requires=rclone_vfs-gcrypt.service
+Requires=rclone_vfs-google.service
+Requires=rclone_vfs-mc.service
+Requires=rclone_vfs-tc.service
 
 [Service]
-User=1000
-Group=1000
-Type=notify
-ExecStartPre=/bin/sleep 10
-ExecStart=/usr/bin/rclone mount \
-  --allow-other \
-  --buffer-size=64M \
-  --dir-cache-time=168h \
-  --drive-chunk-size=64M \
-  --drive-skip-gdocs \
-  --fast-list \
-  --rc \
-  --syslog \
-  --timeout=10m \
-  --umask=002 \
-  --vfs-read-chunk-size-limit=2048M \
-  --vfs-read-chunk-size=64M \
-  -v \
-  gcrypt:medialibrary /mnt/remote/rclone.gcrypt/medialibrary
-ExecStop=/bin/fusermount -uz /mnt/remote/rclone.gcrypt/medialibrary
-Restart=on-abort
-RestartSec=5
-StartLimitInterval=60s
-StartLimitBurst=3
-
+Type=oneshot
 [Install]
 WantedBy=default.target
