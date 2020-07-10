@@ -1,12 +1,14 @@
 # /etc/systemd/system/rclone_vfs.service
 [Unit]
 Description=Rclone VFS Mount
-Requires=rclone_vfs-gcrypt.service
-Requires=rclone_vfs-google.service
-Requires=rclone_vfs-mc.service
-Requires=rclone_vfs-tc.service
 
 [Service]
+# The dummy program will exit
 Type=oneshot
+# Execute a dummy program
+ExecStart=/bin/true
+# This service shall be considered active after start
+RemainAfterExit=yes
+
 [Install]
 WantedBy=default.target

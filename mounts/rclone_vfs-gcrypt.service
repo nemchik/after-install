@@ -1,6 +1,10 @@
 # /etc/systemd/system/rclone_vfs.service
 [Unit]
 Description=Rclone VFS Mount
+# When systemd stops or restarts the rclone_vfs.service, the action is propagated to this unit
+PartOf=rclone_vfs.service
+# Start this unit after the rclone_vfs.service start
+After=rclone_vfs.service
 After=network-online.target
 
 [Service]
