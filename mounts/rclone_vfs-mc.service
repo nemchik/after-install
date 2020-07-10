@@ -15,7 +15,6 @@ ExecStart=/usr/bin/rclone mount \
   --drive-chunk-size=64M \
   --drive-skip-gdocs \
   --fast-list \
-  --rc \
   --syslog \
   --timeout=10m \
   --umask=002 \
