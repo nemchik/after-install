@@ -1,0 +1,18 @@
+# /etc/systemd/system/crop_upload.service
+[Unit]
+Description=crop upload
+After=network-online.target
+
+[Service]
+User=1000
+Group=1000
+Type=oneshot
+WorkingDirectory=/opt/crop/
+ExecStartPre=pgrep -a crop | grep -v -e 'crop (clean|sync|upload)' | cut -d ' ' -f 1 | xargs kill
+ExecStart=/opt/crop/crop upload -vv
+ExecStopPost=/bin/rm -rf /opt/crop/crop.lock
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
