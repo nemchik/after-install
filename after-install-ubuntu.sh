@@ -52,6 +52,7 @@ main() {
         curl \
         fail2ban \
         fonts-powerline \
+        fuse \
         git \
         grep \
         htop \
