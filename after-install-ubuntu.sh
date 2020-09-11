@@ -136,16 +136,6 @@ EOF
     # restart ssh after all the changes above
     sudo systemctl restart ssh
 
-    # https://github.com/rclone/rclone/issues/811#issuecomment-255599253
-    sudo sed -i -E 's/^#?user_allow_other$/user_allow_other/g' /etc/fuse.conf
-
-    # https://rclone.org/install/#script-installation
-    local GET_RCLONE
-    GET_RCLONE=$(mktemp)
-    curl -fsSL rclone.org/install.sh -o "${GET_RCLONE}"
-    sudo bash "${GET_RCLONE}" || true
-    rm -f "${GET_RCLONE}" || true
-
     # https://github.com/trapexit/mergerfs/releases
     local AVAILABLE_MERGERFS
     AVAILABLE_MERGERFS=$(curl -fsL "https://api.github.com/repos/trapexit/mergerfs/releases/latest" | grep -Po '"tag_name": "[Vv]?\K.*?(?=")')
