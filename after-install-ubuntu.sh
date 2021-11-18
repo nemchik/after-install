@@ -50,15 +50,12 @@ main() {
         apt-transport-https \
         ca-certificates \
         curl \
-        fail2ban \
         fonts-powerline \
         fuse \
         git \
         grep \
         htop \
         ncdu \
-        python3 \
-        python3-pip \
         rsync \
         sed \
         smartmontools \
@@ -94,10 +91,10 @@ main() {
     if [[ ! -d "${DETECTED_HOMEDIR}/bashrc-tmux" ]]; then
         git clone https://github.com/spencertipping/bashrc-tmux.git "${DETECTED_HOMEDIR}/bashrc-tmux"
     else
-        git -C "${DETECTED_HOMEDIR}/.tmux" pull
-        git -C "${DETECTED_HOMEDIR}/.tmux" fetch --all --prune
-        git -C "${DETECTED_HOMEDIR}/.tmux" reset --hard origin/master
-        git -C "${DETECTED_HOMEDIR}/.tmux" pull
+        git -C "${DETECTED_HOMEDIR}/bashrc-tmux" pull
+        git -C "${DETECTED_HOMEDIR}/bashrc-tmux" fetch --all --prune
+        git -C "${DETECTED_HOMEDIR}/bashrc-tmux" reset --hard origin/master
+        git -C "${DETECTED_HOMEDIR}/bashrc-tmux" pull
     fi
     if ! grep -q 'bashrc-tmux' "${DETECTED_HOMEDIR}/.bashrc"; then
         local BASHRC_TMP
