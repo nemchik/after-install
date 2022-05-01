@@ -52,7 +52,8 @@ check_root() {
 # Check if running with sudo
 check_sudo() {
     if [[ ${EUID} -eq 0 ]]; then
-        fatal "Running with sudo is not supported. Commands requiring sudo will prompt automatically when required."
+        echo "Running with sudo is not supported. Commands requiring sudo will prompt automatically when required."
+        exit 1
     fi
 }
 
