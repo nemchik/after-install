@@ -2,49 +2,62 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# System Information
+ARCH=$(uname -m)
+readonly ARCH
+export ARCH
+DPKG_ARCH=$(dpkg --print-architecture)
+readonly DPKG_ARCH
+export DPKG_ARCH
+ID=$(grep --color=never -Po '^ID=\K.*' /etc/os-release)
+readonly ID
+export ID
+VERSION_CODENAME=$(grep --color=never -Po '^VERSION_CODENAME=\K.*' /etc/os-release)
+readonly VERSION_CODENAME
+export VERSION_CODENAME
+
 # User/Group Information
 readonly DETECTED_PUID=${SUDO_UID:-$UID}
-readonly DETECTED_UNAME=$(id -un "${DETECTED_PUID}" 2> /dev/null || true)
-readonly DETECTED_PGID=$(id -g "${DETECTED_PUID}" 2> /dev/null || true)
-readonly DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || true)
-readonly DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2> /dev/null || true)
-
-# Root Check Function
-root_check() {
-    if [[ ${DETECTED_PUID} == "0" ]] || [[ ${DETECTED_HOMEDIR} == "/root" ]]; then
-        echo "Running as root is not supported. Please run as a standard user with sudo."
-        exit 1
-    fi
-}
+export DETECTED_PUID
+DETECTED_UNAME=$(id -un "${DETECTED_PUID}" 2> /dev/null || true)
+readonly DETECTED_UNAME
+export DETECTED_UNAME
+DETECTED_PGID=$(id -g "${DETECTED_PUID}" 2> /dev/null || true)
+readonly DETECTED_PGID
+export DETECTED_PGID
+DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || true)
+readonly DETECTED_UGROUP
+export DETECTED_UGROUP
+DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2> /dev/null || true)
+readonly DETECTED_HOMEDIR
+export DETECTED_HOMEDIR
 
 # Cleanup Function
 cleanup() {
     local -ri EXIT_CODE=$?
 
     exit ${EXIT_CODE}
-    trap - 0 1 2 3 6 14 15
+    trap - ERR EXIT SIGABRT SIGALRM SIGHUP SIGINT SIGQUIT SIGTERM
 }
-trap 'cleanup' 0 1 2 3 6 14 15
+trap 'cleanup' ERR EXIT SIGABRT SIGALRM SIGHUP SIGINT SIGQUIT SIGTERM
 
-# Main Function
-main() {
-    # Terminal Check
-    if [[ -t 1 ]]; then
-        root_check
-    fi
-    # Sudo Check
-    if [[ ${EUID} -ne 0 ]]; then
-        echo "Please run with sudo."
+# Check if running as root
+check_root() {
+    if [[ ${DETECTED_PUID} == "0" ]] || [[ ${DETECTED_HOMEDIR} == "/root" ]]; then
+        echo "Running as root is not supported. Please run as a standard user with sudo."
         exit 1
     fi
+}
 
-    # System Info
-    readonly ARCH=$(uname -m)
-    readonly DPKG_ARCH=$(dpkg --print-architecture)
-    readonly ID=$(grep --color=never -Po '^ID=\K.*' /etc/os-release)
-    readonly VERSION_CODENAME=$(grep --color=never -Po '^VERSION_CODENAME=\K.*' /etc/os-release)
+# Check if running with sudo
+check_sudo() {
+    if [[ ${EUID} -eq 0 ]]; then
+        fatal "Running with sudo is not supported. Commands requiring sudo will prompt automatically when required."
+    fi
+}
 
-    # apt-get updates, installs, and cleanups
+# apt-get updates, installs, and cleanups
+package_management() {
     sudo apt-get -y update
     sudo apt-get -y install \
         apt-transport-https \
@@ -63,31 +76,54 @@ main() {
     sudo apt-get -y dist-upgrade
     sudo apt-get -y autoremove
     sudo apt-get -y autoclean
+}
 
-    # kernel modules for vpn
+# Kernel modules for vpn
+kernel_modules() {
     echo "iptable_mangle" | sudo tee /etc/modules-load.d/iptable_mangle.conf
     echo "tun" | sudo tee /etc/modules-load.d/tun.conf
+}
 
-    # tmux config
-    # https://github.com/gpakosz/.tmux
-    if [[ ! -d "${DETECTED_HOMEDIR}/.tmux" ]]; then
-        git clone https://github.com/gpakosz/.tmux.git "${DETECTED_HOMEDIR}/.tmux"
-    else
-        git -C "${DETECTED_HOMEDIR}/.tmux" pull
-        git -C "${DETECTED_HOMEDIR}/.tmux" fetch --all --prune
-        git -C "${DETECTED_HOMEDIR}/.tmux" reset --hard origin/master
-        git -C "${DETECTED_HOMEDIR}/.tmux" pull
+# https://github.com/trapexit/mergerfs/releases
+mergerfs_install() {
+    local AVAILABLE_MERGERFS
+    AVAILABLE_MERGERFS=$(curl -fsL "https://api.github.com/repos/trapexit/mergerfs/releases/latest" | grep -Po '"tag_name": "[Vv]?\K.*?(?=")')
+    local MERGERFS_FILENAME="mergerfs_${AVAILABLE_MERGERFS}.${ID}-${VERSION_CODENAME}_${DPKG_ARCH}.deb"
+    local MERGERFS_TMP
+    MERGERFS_TMP=$(mktemp)
+    curl -fsL "https://github.com/trapexit/mergerfs/releases/download/${AVAILABLE_MERGERFS}/${MERGERFS_FILENAME}" -o "${MERGERFS_TMP}"
+    sudo dpkg -i "${MERGERFS_TMP}"
+    rm -f "${MERGERFS_TMP}" || true
+}
+
+# https://help.ubuntu.com/community/StricterDefaults
+stricter_defaults() {
+    # https://help.ubuntu.com/community/StricterDefaults#Shared_Memory
+    if ! grep -q '/run/shm' /etc/fstab; then
+        echo "none     /run/shm     tmpfs     defaults,ro     0     0" | sudo tee -a /etc/fstab
+    fi
+    sudo mount -o remount /run/shm || true
+
+    # https://help.ubuntu.com/community/StricterDefaults#SSH_Login_Grace_Time
+    sudo sed -i -E 's/^#?LoginGraceTime .*$/LoginGraceTime 20/g' /etc/ssh/sshd_config
+
+    # https://help.ubuntu.com/community/StricterDefaults#Disable_Password_Authentication
+    # only disable password authentication if an ssh key with an email address comment at the end is found in the authorized_keys file
+    # be sure to setup your ssh key before running this script (and change the user comment at the end to your email address)
+    if grep -q -E '^ssh-rsa .* \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
+        sudo sed -i -E 's/^#?PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config
     fi
 
-    ln -s -f "${DETECTED_HOMEDIR}/.tmux/.tmux.conf" "${DETECTED_HOMEDIR}/.tmux.conf"
-    cp -n "${DETECTED_HOMEDIR}/.tmux/.tmux.conf.local" "${DETECTED_HOMEDIR}/.tmux.conf.local"
-    sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
-    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux"
-    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf"
-    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf.local"
+    # https://help.ubuntu.com/community/StricterDefaults#SSH_Root_Login
+    sudo sed -i -E 's/^#?PermitRootLogin .*$/PermitRootLogin no/g' /etc/ssh/sshd_config
 
-    # auto-tmux for SSH logins
-    # https://github.com/spencertipping/bashrc-tmux
+    # restart ssh after all the changes above
+    sudo systemctl restart ssh
+}
+
+# auto-tmux for SSH logins
+# https://github.com/spencertipping/bashrc-tmux
+tmux_auto() {
     if [[ ! -d "${DETECTED_HOMEDIR}/bashrc-tmux" ]]; then
         git clone https://github.com/spencertipping/bashrc-tmux.git "${DETECTED_HOMEDIR}/bashrc-tmux"
     else
@@ -111,35 +147,41 @@ EOF
     fi
     chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/bashrc-tmux"
     chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.bashrc"
+}
 
-    # https://help.ubuntu.com/community/StricterDefaults#Shared_Memory
-    if ! grep -q '/run/shm' /etc/fstab; then
-        echo "none     /run/shm     tmpfs     defaults,ro     0     0" >> /etc/fstab
-    fi
-    sudo mount -o remount /run/shm || true
-
-    # https://help.ubuntu.com/community/StricterDefaults#SSH_Login_Grace_Time
-    sudo sed -i -E 's/^#?LoginGraceTime .*$/LoginGraceTime 20/g' /etc/ssh/sshd_config
-
-    # https://help.ubuntu.com/community/StricterDefaults#Disable_Password_Authentication
-    # only disable password authentication if an ssh key with an email address comment at the end is found in the authorized_keys file
-    # be sure to setup your ssh key before running this script (and change the user comment at the end to your email address)
-    if grep -q -E '^ssh-rsa .* \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
-        sudo sed -i -E 's/^#?PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config
+# tmux config
+# https://github.com/gpakosz/.tmux
+tmux_config() {
+    if [[ ! -d "${DETECTED_HOMEDIR}/.tmux" ]]; then
+        git clone https://github.com/gpakosz/.tmux.git "${DETECTED_HOMEDIR}/.tmux"
+    else
+        git -C "${DETECTED_HOMEDIR}/.tmux" pull
+        git -C "${DETECTED_HOMEDIR}/.tmux" fetch --all --prune
+        git -C "${DETECTED_HOMEDIR}/.tmux" reset --hard origin/master
+        git -C "${DETECTED_HOMEDIR}/.tmux" pull
     fi
 
-    # https://help.ubuntu.com/community/StricterDefaults#SSH_Root_Login
-    sudo sed -i -E 's/^#?PermitRootLogin .*$/PermitRootLogin no/g' /etc/ssh/sshd_config
+    ln -s -f "${DETECTED_HOMEDIR}/.tmux/.tmux.conf" "${DETECTED_HOMEDIR}/.tmux.conf"
+    cp -n "${DETECTED_HOMEDIR}/.tmux/.tmux.conf.local" "${DETECTED_HOMEDIR}/.tmux.conf.local"
+    sudo sed -i -E 's/^#?set -g mouse on$/set -g mouse on/g' "${DETECTED_HOMEDIR}/.tmux.conf.local"
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux"
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf"
+    chown -R "${DETECTED_PUID}":"${DETECTED_PGID}" "${DETECTED_HOMEDIR}/.tmux.conf.local"
+}
 
-    # restart ssh after all the changes above
-    sudo systemctl restart ssh
+# Main Function
+main() {
+    # Terminal Check
+    if [[ -t 1 ]]; then
+        check_root
+        check_sudo
+    fi
 
-    # https://github.com/trapexit/mergerfs/releases
-    local AVAILABLE_MERGERFS
-    AVAILABLE_MERGERFS=$(curl -fsL "https://api.github.com/repos/trapexit/mergerfs/releases/latest" | grep -Po '"tag_name": "[Vv]?\K.*?(?=")')
-    local MERGERFS_FILENAME="mergerfs_${AVAILABLE_MERGERFS}.${ID}-${VERSION_CODENAME}_${DPKG_ARCH}.deb"
-    curl -fsL "https://github.com/trapexit/mergerfs/releases/download/${AVAILABLE_MERGERFS}/${MERGERFS_FILENAME}" -o "${MERGERFS_FILENAME}"
-    sudo dpkg -i "${MERGERFS_FILENAME}"
-    rm -f "${MERGERFS_FILENAME}" || true
+    package_management
+    kernel_modules
+    tmux_config
+    tmux_auto
+    stricter_defaults
+    mergerfs_install
 }
 main
