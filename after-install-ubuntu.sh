@@ -109,9 +109,10 @@ stricter_defaults() {
     sudo sed -i -E 's/^#?LoginGraceTime .*$/LoginGraceTime 20/g' /etc/ssh/sshd_config
 
     # https://help.ubuntu.com/community/StricterDefaults#Disable_Password_Authentication
-    # only disable password authentication if an ssh key with an email address comment at the end is found in the authorized_keys file
-    # be sure to setup your ssh key before running this script (and change the user comment at the end to your email address)
-    if grep -q -E '^ssh-rsa .* \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
+    # only disable password authentication if an ssh key is found in the authorized_keys file
+    # be sure to setup your ssh key before running this script
+    # also be sure to use an ed25519 key (preferred) or an rsa key
+    if grep -q -E '^(sk-)?(ssh-rsa AAAAB3NzaC1yc2|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5)[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
         sudo sed -i -E 's/^#?PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config
     fi
 
