@@ -112,7 +112,7 @@ stricter_defaults() {
     # only disable password authentication if an ssh key is found in the authorized_keys file
     # be sure to setup your ssh key before running this script
     # also be sure to use an ed25519 key (preferred) or an rsa key
-    if grep -q -E '^(sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29t|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-rsa AAAAB3NzaC1yc2E)[0-9A-Za-z+/]+[=]{0,3}( .*)?$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
+    if grep -q -E '^(sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29t|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-rsa AAAAB3NzaC1yc2E)[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$' "${DETECTED_HOMEDIR}/.ssh/authorized_keys"; then
         sudo sed -i -E 's/^#?PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config
     fi
 
