@@ -105,9 +105,6 @@ stricter_defaults() {
     fi
     sudo mount -o remount /run/shm || true
 
-    # https://help.ubuntu.com/community/StricterDefaults#SSH_Login_Grace_Time
-    sudo sed -i -E 's/^#?LoginGraceTime .*$/LoginGraceTime 20/g' /etc/ssh/sshd_config
-
     # https://help.ubuntu.com/community/StricterDefaults#Disable_Password_Authentication
     # only disable password authentication if an ssh key is found in the authorized_keys file
     # be sure to setup your ssh key before running this script
