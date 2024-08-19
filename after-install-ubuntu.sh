@@ -19,16 +19,16 @@ export VERSION_CODENAME
 # User/Group Information
 readonly DETECTED_PUID=${SUDO_UID:-$UID}
 export DETECTED_PUID
-DETECTED_UNAME=$(id -un "${DETECTED_PUID}" 2> /dev/null || true)
+DETECTED_UNAME=$(id -un "${DETECTED_PUID}" 2>/dev/null || true)
 readonly DETECTED_UNAME
 export DETECTED_UNAME
-DETECTED_PGID=$(id -g "${DETECTED_PUID}" 2> /dev/null || true)
+DETECTED_PGID=$(id -g "${DETECTED_PUID}" 2>/dev/null || true)
 readonly DETECTED_PGID
 export DETECTED_PGID
-DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || true)
+DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2>/dev/null || true)
 readonly DETECTED_UGROUP
 export DETECTED_UGROUP
-DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2> /dev/null || true)
+DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2>/dev/null || true)
 readonly DETECTED_HOMEDIR
 export DETECTED_HOMEDIR
 
@@ -137,7 +137,7 @@ tmux_auto() {
     if ! grep -q 'bashrc-tmux' "${DETECTED_HOMEDIR}/.bashrc"; then
         local BASHRC_TMP
         BASHRC_TMP=$(mktemp)
-        cat <<- 'EOF' | sed -E 's/^ *//' | cat - "${DETECTED_HOMEDIR}/.bashrc" > "${BASHRC_TMP}"
+        cat <<-'EOF' | sed -E 's/^ *//' | cat - "${DETECTED_HOMEDIR}/.bashrc" >"${BASHRC_TMP}"
             [ -z "$PS1" ] && return                 # this still comes first
             source ~/bashrc-tmux/bashrc-tmux
 
